@@ -138,7 +138,7 @@ void setup() {
   // Enable saved past credential by autoReconnect option,
   // even once it is disconnected.
   Config.autoReconnect = true;
-  Config.hostName = "esp32-01";
+  Config.hostName = "EPCB TECH";
   
   Portal.config(Config);
 
