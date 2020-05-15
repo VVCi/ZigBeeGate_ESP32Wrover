@@ -30,10 +30,12 @@ zb_znp zigbee_network(&Serial2);
 
 FirebaseData firebaseData;
 
+void EPCBsign();
 void rootPage();
 void startPage();
-void EPCBsign();
+void startWiFi();
 void connectFirebaseServer();
+void startCoordinator();
 
 static const char AUX_TIMEZONE[] PROGMEM = R"(
 {
@@ -135,46 +137,10 @@ void setup() {
   Serial2.begin(115200);
   Serial2.setTimeout(100);
 
-  // Enable saved past credential by autoReconnect option,
-  // even once it is disconnected.
-  Config.autoReconnect = true;
-  Config.hostName = "EPCB TECH";
-  
-  Portal.config(Config);
-
-  // Load aux. page
-  Timezone.load(AUX_TIMEZONE);
-  // Retrieve the select element that holds the time zone code and
-  // register the zone mnemonic in advance.
-  AutoConnectSelect&  tz = Timezone["timezone"].as<AutoConnectSelect>();
-  for (uint8_t n = 0; n < sizeof(TZ) / sizeof(Timezone_t); n++) {
-    tz.add(String(TZ[n].zone));
-  }
-
-  Portal.join({ Timezone });        // Register aux. page
-
-  // Behavior a root path of ESP8266WebServer.
-  Server.on("/", rootPage);
-  Server.on("/start", startPage);   // Set NTP server trigger handler
-
-  Serial.println("Creating portal and trying to connect...");
-  // Establish a connection with an autoReconnect option.
-  if (Portal.begin()) {
-    Serial.println("WiFi connected: " + WiFi.localIP().toString());
-    Serial.println(WiFi.getHostname());
-  }
-  
   EPCBSign();
-  connectFirebaseServer();
-  
-  /* Khởi động coodinatior */
-  Serial.println("\nstart_coordinator(0)");
-  if (zigbee_network.start_coordinator(0) == 0) {
-    Serial.println("OK");
-  }
-  else {
-    Serial.println("NG");
-  }
+  startWiFi();
+  connectFirebaseServer(); // 
+  startCoordinator();
 }
 
 void loop() {
@@ -278,10 +244,14 @@ void loop() {
   }
 }
 
-
-void connectFirebaseServer(){
-  Firebase.begin("https://vvcisensorhost.firebaseio.com/", "BOxodhdlCVfhZeIX7gaUP3knd197yoYm8BkKqtVf");
-  Serial.println("Firebase Connected!");
+void startCoordinator(){
+  Serial.println("\nstart_coordinator(0)");
+  if (zigbee_network.start_coordinator(0) == 0) {
+    Serial.println("OK");
+  }
+  else {
+    Serial.println("NG");
+  }
 }
 
 int zb_znp::zigbee_message_handler(zigbee_msg_t& zigbee_msg) {
@@ -443,17 +413,7 @@ int zb_znp::zigbee_message_handler(zigbee_msg_t& zigbee_msg) {
       Serial.print(ZDO_DeviceAnnce->extAddr[i], HEX);
     }
     Serial.print("\n");
-    /***
-     * Specifies the MAC capabilities of the device.
-     * Bit: 0 – Alternate PAN Coordinator
-     * 1 – Device type: 1- ZigBee Router; 0 – End Device
-     * 2 – Power Source: 1 Main powered
-     * 3 – Receiver on when idle
-     * 4 – Reserved
-     * 5 – Reserved
-     * 6 – Security capability
-     * 7 – Reserved
-     */
+
     Serial.print("\tcapabilities: ");
     Serial.println(ZDO_DeviceAnnce->capabilities);
   }
@@ -515,6 +475,42 @@ void startPage() {
   Server.client().stop();
 }
 
+void startWiFi(){
+  // Enable saved past credential by autoReconnect option,
+  // even once it is disconnected.
+  Config.autoReconnect = true;
+  Config.hostName = "EPCB TECH";
+  
+  Portal.config(Config);
+
+  // Load aux. page
+  Timezone.load(AUX_TIMEZONE);
+  // Retrieve the select element that holds the time zone code and
+  // register the zone mnemonic in advance.
+  AutoConnectSelect&  tz = Timezone["timezone"].as<AutoConnectSelect>();
+  for (uint8_t n = 0; n < sizeof(TZ) / sizeof(Timezone_t); n++) {
+    tz.add(String(TZ[n].zone));
+  }
+
+  Portal.join({ Timezone });        // Register aux. page
+
+  // Behavior a root path of ESP8266WebServer.
+  Server.on("/", rootPage);
+  Server.on("/start", startPage);   // Set NTP server trigger handler
+
+  Serial.println("Creating portal and trying to connect...");
+  // Establish a connection with an autoReconnect option.
+  if (Portal.begin()) {
+    Serial.println("WiFi connected: " + WiFi.localIP().toString());
+    Serial.println(WiFi.getHostname());
+  }
+    
+}
+
+void connectFirebaseServer(){
+  Firebase.begin("https://vvcisensorhost.firebaseio.com/", "BOxodhdlCVfhZeIX7gaUP3knd197yoYm8BkKqtVf");
+  Serial.println("Firebase Connected!");
+}
 
 void EPCBSign(){
   Serial.printf("==========================\n");
