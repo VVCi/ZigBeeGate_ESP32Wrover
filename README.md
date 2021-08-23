@@ -1,5 +1,5 @@
 # ZigBee Gateway with ESP32Wrover
-# Thí project create by me and team.
+# This project create by me and team.
 @Author Software: EPCB TECH - Website: www.epcb.vn
 @Date: 2020
 
